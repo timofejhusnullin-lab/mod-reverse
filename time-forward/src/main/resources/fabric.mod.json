@@ -1,0 +1,20 @@
+{
+	"schemaVersion": 1,
+	"id": "timeforward",
+	"version": "${version}",
+	"name": "Time Forward",
+	"description": "Зажми X — время ускоряется, как спидхак. Скорость меняется клавишами [ и ] или в config/timeforward.properties.",
+	"authors": ["timofejhusnullin"],
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["com.timeforward.TimeForwardMod"],
+		"client": ["com.timeforward.client.TimeForwardClient"]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

@@ -3,7 +3,18 @@ plugins {
 }
 
 base {
-	archivesName = 'fastsmelting'
+	archivesName = 'timeforward'
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"timeforward" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
 }
 
 dependencies {
