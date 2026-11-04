@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths-ignore:
       - 'instant-break/**'
+      - 'fast-smelting/**'
   workflow_dispatch:
 permissions:
   contents: write
