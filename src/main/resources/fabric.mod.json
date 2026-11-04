@@ -1,0 +1,20 @@
+{
+	"schemaVersion": 1,
+	"id": "timerewind",
+	"version": "${version}",
+	"name": "Time Rewind",
+	"description": "Зажми Z — и время отматывается назад. Отпусти — отмотка останавливается. Если бы ты умер, у тебя есть несколько секунд, чтобы отмотать время.",
+	"authors": ["timofejhusnullin"],
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["com.timerewind.TimeRewindMod"],
+		"client": ["com.timerewind.client.TimeRewindClient"]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
