@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "instantbreak",
+	"version": "${version}",
+	"name": "Instant Break",
+	"description": "Блоки ломаются мгновенно, как с эффективностью 999. Прочность и дроп — по обычным правилам.",
+	"authors": ["timofejhusnullin"],
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["com.instantbreak.InstantBreakMod"]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
