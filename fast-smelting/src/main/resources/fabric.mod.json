@@ -6,7 +6,7 @@
 	"description": "Печи, плавильни и коптильни работают в десятки раз быстрее. Расход топлива на предмет не меняется.",
 	"authors": ["timofejhusnullin"],
 	"license": "MIT",
-	"environment": "server",
+	"environment": "*",
 	"entrypoints": {
 		"main": ["com.fastsmelting.FastSmeltingMod"]
 	},
