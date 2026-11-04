@@ -2,13 +2,15 @@ package com.timerewind;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.minecraft.core.particles.ParticleTypes;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -20,6 +22,7 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.portal.TeleportTransition;
@@ -46,7 +49,7 @@ public final class RewindManager {
 	/** Максимум мобов в одном снимке (защита от лагов). */
 	public static final int MAX_MOBS = 64;
 	/** Сколько секунд даётся на то, чтобы зажать клавишу после "смерти". */
-	public static final int RESCUE_SECONDS = 6;
+	public static final int RESCUE_SECONDS = 8;
 	// =================================
 
 	private static final int MAX_HISTORY = 20 * HISTORY_SECONDS;
@@ -61,6 +64,7 @@ public final class RewindManager {
 		final ArrayDeque<Snapshot> history = new ArrayDeque<>();
 		volatile boolean holding;
 		boolean rewinding;
+		boolean screenOpen; // у клиента сейчас открыт экран смерти
 		int rescueLeft;
 	}
 
@@ -105,6 +109,10 @@ public final class RewindManager {
 		if (state.rescueLeft == 0) {
 			state.rescueLeft = RESCUE_TICKS;
 			player.sendOverlayMessage(rescueMessage(RESCUE_SECONDS));
+			// Показываем обычный экран смерти (сервер при этом считает игрока живым).
+			player.connection.send(new ClientboundPlayerCombatKillPacket(player.getId(),
+					source.getLocalizedDeathMessage(player)));
+			state.screenOpen = true;
 			ServerLevel level = (ServerLevel) player.level();
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
 					SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 1.0f, 0.5f);
@@ -117,7 +125,7 @@ public final class RewindManager {
 	public static boolean allowDamage(LivingEntity entity, DamageSource source, float amount) {
 		if (entity instanceof ServerPlayer player) {
 			State state = STATES.get(player.getUUID());
-			if (state != null && state.rewinding) return false;
+			if (state != null && (state.rewinding || state.rescueLeft > 0)) return false;
 		}
 		return true;
 	}
@@ -131,6 +139,7 @@ public final class RewindManager {
 		if (!player.isAlive()) {
 			state.history.clear();
 			state.rewinding = false;
+			state.screenOpen = false;
 			state.rescueLeft = 0;
 			return;
 		}
@@ -139,7 +148,16 @@ public final class RewindManager {
 			rewind(player, state);
 			return;
 		}
-		state.rewinding = false;
+		if (state.rewinding) {
+			state.rewinding = false;
+			stopRewind(player); // обнуляем скорость, чтобы не улетать назад
+		}
+
+		// Отмотка закончилась (или смерть отменена) — закрываем экран смерти у клиента.
+		if (state.screenOpen && state.rescueLeft == 0) {
+			state.screenOpen = false;
+			ServerPlayNetworking.send(player, new CloseScreenPayload());
+		}
 
 		if (state.rescueLeft > 0) {
 			state.rescueLeft--;
@@ -200,9 +218,12 @@ public final class RewindManager {
 		state.rewinding = true;
 		state.rescueLeft = 0; // зажал вовремя — спасён
 
-		// Игрок
-		player.teleport(new TeleportTransition(level, snap.pos(), snap.motion(),
-				snap.yRot(), snap.xRot(), TeleportTransition.DO_NOTHING));
+		// Игрок. Скорость = путь до следующей точки, поэтому клиент плавно
+		// интерполирует движение. Взгляд не трогаем: можно свободно смотреть по сторонам.
+		Snapshot next = state.history.peekLast();
+		Vec3 motion = next != null ? next.pos().subtract(snap.pos()) : Vec3.ZERO;
+		player.teleport(new TeleportTransition(level, snap.pos(), motion, 0.0f, 0.0f,
+				EnumSet.of(Relative.X_ROT, Relative.Y_ROT), TeleportTransition.DO_NOTHING));
 		player.setHealth(snap.health());
 		player.getFoodData().setFoodLevel(snap.food());
 		player.getFoodData().setSaturation(snap.saturation());
@@ -226,14 +247,18 @@ public final class RewindManager {
 			}
 		}
 
-		// Эффекты: частицы и звук
-		level.sendParticles(ParticleTypes.REVERSE_PORTAL,
-				player.getX(), player.getY() + 1.0, player.getZ(), 8, 0.4, 0.7, 0.4, 0.1);
-		if (player.tickCount % 3 == 0) {
+		// Тихий звук (частиц нет). Убери блок, если звук не нужен.
+		if (player.tickCount % 6 == 0) {
 			float pitch = 0.6f + 0.8f * ((float) state.history.size() / MAX_HISTORY);
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
-					SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6f, pitch);
+					SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.4f, pitch);
 		}
+	}
+
+	private static void stopRewind(ServerPlayer player) {
+		ServerLevel level = (ServerLevel) player.level();
+		player.teleport(new TeleportTransition(level, player.position(), Vec3.ZERO, 0.0f, 0.0f,
+				EnumSet.of(Relative.X_ROT, Relative.Y_ROT), TeleportTransition.DO_NOTHING));
 	}
 
 	private static void killForReal(ServerPlayer player) {

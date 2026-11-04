@@ -18,13 +18,13 @@
 
 ## Установка
 Нужны Minecraft **26.3**, Fabric Loader **0.20.1+**, **Fabric API** и Java **25**.
-Положи `timerewind-1.0.0.jar` и Fabric API в папку `mods`. Мод нужен и на сервере, и на клиенте (в одиночной игре — просто в `mods`).
+Положи `timerewind-1.1.0.jar` и Fabric API в папку `mods`. Мод нужен и на сервере, и на клиенте (в одиночной игре — просто в `mods`).
 
 ## Сборка
 Нужен JDK 25.
 
     ./gradlew build
 
-Готовый jar: `build/libs/timerewind-1.0.0.jar`.
+Готовый jar: `build/libs/timerewind-1.1.0.jar`.
 
 Без установки JDK: залей папку в репозиторий на GitHub. Workflow `.github/workflows/build.yml` соберёт jar сам, он будет во вкладке Actions в артефактах.

@@ -12,6 +12,7 @@ public class TimeRewindMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		PayloadTypeRegistry.serverboundPlay().register(RewindPayload.TYPE, RewindPayload.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(CloseScreenPayload.TYPE, CloseScreenPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(RewindPayload.TYPE,
 				(payload, context) -> RewindManager.setHolding(context.player().getUUID(), payload.held()));
