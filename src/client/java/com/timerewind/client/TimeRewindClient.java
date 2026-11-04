@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
+import org.lwjgl.sdl.SDLScancode;
 
 public class TimeRewindClient implements ClientModInitializer {
 	private static final KeyMapping.Category CATEGORY =
@@ -18,8 +19,8 @@ public class TimeRewindClient implements ClientModInitializer {
 	/** Клавиша по умолчанию — Z. Меняется в настройках управления. */
 	private static final KeyMapping REWIND_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.timerewind.rewind",
-			InputConstants.Type.KEYSYM,
-			InputConstants.KEY_Z,
+			InputConstants.Type.KEYBOARD,
+			SDLScancode.SDL_SCANCODE_Z,
 			CATEGORY
 	));
 
